@@ -52,7 +52,7 @@ struct LuaContext {
 
     LuaContext() {
         // Open base + math for math.random
-        lua.open_libraries(sol::lib::base, sol::lib::math);
+        lua.open_libraries(sol::lib::base, sol::lib::math, sol::lib::table);
 
         // Create tables once
         int tableSize = 999;
@@ -136,7 +136,7 @@ function randomEntryIdx(t)
     local keys = {}
 
     for key, _ in pairs(t) do
-        keys[#keys + 1] = key
+        table.insert(keys, key)
     end
 
     local index = math.random(1, #keys)
