@@ -2,15 +2,30 @@
 #include <benchmark/benchmark.h>
 #include <iostream>
 
-// Original version using pairs and building keys table
-static void BM_randomEntryIdx_original(benchmark::State& state) {
+struct LuaContext {
     sol::state lua;
-    lua.open_libraries(sol::lib::base, sol::lib::math);
+    sol::table tInts;
+    sol::table tStrings;
+    sol::function randomEntry;
 
-    for (auto _ : state) {
-        auto result = lua.script(R"(
-            utils = {}
-            function utils.randomEntryIdx(t)
+    LuaContext() {
+        // Open base + math for math.random
+        lua.open_libraries(sol::lib::base, sol::lib::math);
+
+        // Create table once
+        tInts = lua.create_table();
+        for (int i = 1; i <= 1000; ++i) {
+            tInts[i] = i * 2;
+        }
+
+        tStrings = lua.create_table();
+        for (int i = 1; i <= 1000; ++i) {
+            tStrings[std::to_string(i)] = i * 2;
+        }
+
+        // Original function: uses pairs + keys
+        lua.script(R"(
+            function randomEntryIdx(t)
                 local keys = {}
 
                 for key, _ in pairs(t) do
@@ -21,53 +36,37 @@ static void BM_randomEntryIdx_original(benchmark::State& state) {
                 return index, t[index]
             end
 
-            function utils.randomEntry(t)
-                local _, item = utils.randomEntryIdx(t)
+            function randomEntry(t)
+                local _, item = randomEntryIdx(t)
                 return item
             end
-
-            local t = {}
-            for i = 1, 100 do
-                t[i] = i
-            end
-
-            utils.randomEntry(t)
         )");
-        benchmark::DoNotOptimize(result);
+
+        // Store function handles
+        randomEntry = lua["randomEntry"];
+    }
+};
+
+// Original version using pairs and building keys table
+static void BM_randomEntryIdx_ints(benchmark::State& state) {
+    static LuaContext ctx;
+
+    for (auto _ : state) {
+        benchmark::DoNotOptimize(ctx.randomEntry(ctx.tInts));
     }
 }
 
 // Optimized version for array-like tables
-static void BM_randomEntryIdx_optimized(benchmark::State& state) {
-    sol::state lua;
-    lua.open_libraries(sol::lib::base, sol::lib::math);
+static void BM_randomEntryIdx_strings(benchmark::State& state) {
+    static LuaContext ctx;
 
     for (auto _ : state) {
-        auto result = lua.script(R"(
-            utils = {}
-            function utils.randomEntryIdx(t)
-                local index = math.random(1, #t)
-                return index, t[index]
-            end
-
-            function utils.randomEntry(t)
-                local _, item = utils.randomEntryIdx(t)
-                return item
-            end
-
-            local t = {}
-            for i = 1, 100 do
-                t[i] = i
-            end
-
-            utils.randomEntry(t)
-        )");
-        benchmark::DoNotOptimize(result);
+        benchmark::DoNotOptimize(ctx.randomEntry(ctx.tStrings));
     }
 }
 
 // Register both benchmarks
-BENCHMARK(BM_randomEntryIdx_original);
-BENCHMARK(BM_randomEntryIdx_optimized);
+BENCHMARK(BM_randomEntryIdx_ints);
+BENCHMARK(BM_randomEntryIdx_strings);
 
 BENCHMARK_MAIN();
