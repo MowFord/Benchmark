@@ -55,7 +55,7 @@ struct LuaContext {
         lua.open_libraries(sol::lib::base, sol::lib::math);
 
         // Create tables once
-        int tableSize = 1000;
+        int tableSize = 999;
         tInts = lua.create_table();
         for (int i = 1; i <= tableSize; ++i) {
             tInts[i] = i * 2;
@@ -64,7 +64,7 @@ struct LuaContext {
         tStrings = lua.create_table();
         for (int i = 1; i <= tableSize; ++i) {
             std::string s = std::to_string(i);
-            tStrings[s + s + s + s + s + s + s + s + s + s + s + s + s + s + s] = i * 2;
+            tStrings[s] = i * 2;
         }
 
         tMixed = lua.create_table();
@@ -76,7 +76,7 @@ struct LuaContext {
             else
             {
                 std::string s = std::to_string(i);
-                tMixed[s + s + s + s + s + s + s + s + s + s + s + s + s + s + s] = i * 2;
+                tMixed[s] = i * 2;
             }
         }
 
@@ -88,6 +88,7 @@ function IsTableIpairsCompatible(tbl)
     local tableSize = #tbl
     -- most basic requirement to be ipairs-compatible: 1st and Nth entry is not nil
     if
+        tableSize == 0 or
         tbl[1] == nil or
         tbl[tableSize] == nil
     then
