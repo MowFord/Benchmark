@@ -55,7 +55,7 @@ struct LuaContext {
         lua.open_libraries(sol::lib::base, sol::lib::math, sol::lib::table);
 
         // Create tables once
-        int tableSize = 999;
+        int tableSize = 50;
         tInts = lua.create_table();
         for (int i = 1; i <= tableSize; ++i) {
             tInts[i] = i * 2;
@@ -97,7 +97,7 @@ function IsTableIpairsCompatible(tbl)
 
     -- assume a table with 1000+ entries with sequential keys starting from 1 has no other relevant entries
     -- technically incorrect but very highly unlikely (and improves performance for very large tables)
-    if tableSize >= 1000 then
+    if tableSize >= 10 then
         return true
     end
 
@@ -136,7 +136,7 @@ function randomEntryIdx(t)
     local keys = {}
 
     for key, _ in pairs(t) do
-        table.insert(keys, key)
+        keys[#keys + 1] = key
     end
 
     local index = math.random(1, #keys)
